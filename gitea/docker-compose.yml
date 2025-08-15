@@ -1,0 +1,172 @@
+networks:
+  gitea-drone-net:
+    driver: bridge
+
+
+volumes:
+  gitea-data:
+    driver: local
+  gitea-db-data:
+    driver: local
+  drone-data:
+    driver: local
+  drone-db-data:
+    driver: local
+
+services:
+  gitea-db:
+    image: postgres:17
+    container_name: gitea-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${GITEA_DB_NAME}
+      POSTGRES_USER: ${GITEA_DB_USER}
+      POSTGRES_PASSWORD: ${GITEA_DB_PASSWORD}
+    volumes:
+      - gitea-db-data:/var/lib/postgresql/data
+    networks:
+      - gitea-drone-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${GITEA_DB_USER} -d ${GITEA_DB_NAME}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    security_opt:
+      - no-new-privileges:true
+
+
+  gitea:
+    image: gitea/gitea:${GITEA_VERSION:-1.24}
+    container_name: gitea-server
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ}
+      USER_UID: ${USER_ID:-1000}
+      USER_GID: ${GROUP_ID:-1000}
+      # DB
+      GITEA__database__DB_TYPE: postgres
+      GITEA__database__HOST: gitea-db:5432
+      GITEA__database__NAME: ${GITEA_DB_NAME}
+      GITEA__database__USER: ${GITEA_DB_USER}
+      GITEA__database__PASSWD: ${GITEA_DB_PASSWORD}
+      # Server / URLs
+      GITEA__server__DOMAIN: ${GITEA_DOMAIN}
+      GITEA__server__HTTP_PORT: 3000
+      GITEA__server__ROOT_URL: ${GITEA_ROOT_URL}
+      GITEA__server__DISABLE_SSH: false
+      # SSH
+      GITEA__server__SSH_PORT: ${GITEA_SSH_PORT}
+      GITEA__server__START_SSH_SERVER: ${GITEA_START_SSH_SERVER}
+      GITEA__server__SSH_LISTEN_PORT: ${GITEA_SSH_LISTEN_PORT}
+      # Security & service
+      GITEA__webhook__ALLOWED_HOST_LIST: "*"
+      GITEA__security__INSTALL_LOCK: true
+      GITEA__security__SECRET_KEY: ${GITEA_SECRET_KEY}
+      GITEA__security__INTERNAL_TOKEN: ${GITEA_INTERNAL_TOKEN}
+      GITEA__oauth2__JWT_SECRET: ${GITEA_OAUTH2_JWT_SECRET}
+      GITEA__service__DISABLE_REGISTRATION: ${GITEA_DISABLE_REGISTRATION}
+      GITEA__service__REQUIRE_SIGNIN_VIEW: true
+      # GITEA__repository__DEFAULT_PRIVATE: private
+    volumes:
+      - gitea-data:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "${GITEA_HTTP_PORT}:3000"
+      - "${GITEA_SSH_PORT}:2222"
+    networks:
+      - gitea-drone-net
+    depends_on:
+      gitea-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    security_opt:
+      - no-new-privileges:true
+
+  drone-db:
+    image: postgres:17
+    container_name: drone-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DRONE_DB_NAME}
+      POSTGRES_USER: ${DRONE_DB_USER}
+      POSTGRES_PASSWORD: ${DRONE_DB_PASSWORD}
+    volumes:
+      - drone-db-data:/var/lib/postgresql/data
+    networks:
+      - gitea-drone-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DRONE_DB_USER} -d ${DRONE_DB_NAME}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    security_opt:
+      - no-new-privileges:true
+
+  drone-server:
+    image: drone/drone:2.20
+    container_name: drone-server
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ}
+      DRONE_GITEA_SERVER: http://gitea:3000/
+      DRONE_GITEA_CLIENT_ID: ${DRONE_GITEA_CLIENT_ID}
+      DRONE_GITEA_CLIENT_SECRET: ${DRONE_GITEA_CLIENT_SECRET}
+      DRONE_RPC_SECRET: ${DRONE_RPC_SECRET}
+      DRONE_SERVER_HOST: ${DRONE_SERVER_HOST}
+      DRONE_SERVER_PROTO: http
+      DRONE_DATABASE_DRIVER: postgres
+      DRONE_DATABASE_DATASOURCE: postgres://${DRONE_DB_USER}:${DRONE_DB_PASSWORD}@drone-db:5432/${DRONE_DB_NAME}?sslmode=disable
+      DRONE_USER_CREATE: username:${DRONE_ADMIN_USER},admin:true
+      DRONE_REGISTRATION_CLOSED: false
+      DRONE_RUNNER_NETWORKS: gitea-drone-net
+    volumes:
+      - drone-data:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "8080:80"
+    networks:
+      - gitea-drone-net
+    depends_on:
+      drone-db:
+        condition: service_healthy
+      gitea:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    security_opt:
+      - no-new-privileges:true
+
+  drone-runner:
+    image: drone/drone-runner-docker:1.8
+    container_name: drone-runner
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ}
+      DRONE_RPC_PROTO: http
+      DRONE_RPC_HOST: drone-server
+      DRONE_RPC_SECRET: ${DRONE_RPC_SECRET}
+      DRONE_RUNNER_CAPACITY: 2
+      DRONE_RUNNER_NAME: ${DRONE_RUNNER_NAME}
+      DRONE_DEBUG: false
+      DRONE_TRACE: false
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - gitea-drone-net
+    depends_on:
+      - drone-server
+    security_opt:
+      - no-new-privileges:true
