@@ -1,0 +1,51 @@
+version: 0.1
+log:
+  accesslog:
+    disabled: false
+  level: info
+  formatter: text
+  fields:
+    service: registry
+    environment: docker
+
+storage:
+  filesystem:
+    rootdirectory: /var/lib/registry
+  delete:
+    enabled: true
+
+auth:
+  htpasswd:
+    realm: basic-realm
+    path: /auth/htpasswd
+
+http:
+  addr: :5000
+  headers:
+    X-Content-Type-Options: [nosniff]
+    Access-Control-Allow-Origin: ['http://localhost:8080']
+    Access-Control-Allow-Methods: ['HEAD', 'GET', 'OPTIONS', 'DELETE', 'PUT', 'POST']
+    Access-Control-Allow-Headers: ['Authorization', 'Accept', 'Cache-Control', 'Content-Type', 'DNT', 'If-Modified-Since', 'Keep-Alive', 'Origin', 'User-Agent', 'X-Mx-ReqToken', 'X-Requested-With']
+    Access-Control-Max-Age: [1728000]
+    Access-Control-Allow-Credentials: [true]
+    Access-Control-Expose-Headers: ['Docker-Content-Digest']
+
+health:
+  storagedriver:
+    enabled: true
+    interval: 10s
+    threshold: 3
+
+# Notification endpoints for webhooks (optional)
+notifications:
+  events:
+    includereferences: true
+  endpoints:
+    - name: local-webhook
+      disabled: true
+      url: http://registry-ui/webhook
+      headers:
+        Authorization: [Bearer <your-token>]
+      timeout: 1s
+      threshold: 10
+      backoff: 1s
