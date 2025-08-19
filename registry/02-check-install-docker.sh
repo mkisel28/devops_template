@@ -13,7 +13,7 @@ NC='\033[0m'
 log() { echo -e "${BLUE}[INFO]${NC} $*"; }
 ok() { echo -e "${GREEN}[OK]${NC} $*"; }
 
-NEW_USER="${NEW_USER:-onedev}"
+NEW_USER="${NEW_USER:-registry}"
 
 log "Обновление пакетов..."
 apt update -y
@@ -65,6 +65,3 @@ cd "$(dirname "$0")"
 if [ ! -f .env ]; then
     cp .env.example .env
 fi
-
-
-
