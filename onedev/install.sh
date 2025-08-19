@@ -31,16 +31,24 @@ get_user_home() {
     TARGET_DIR="${TARGET_HOME}/onedev"
 }
 
+
+check_env_file() {
+    if [[ ! -f "${TARGET_DIR}/.env" ]]; then
+        err "Файл ${TARGET_DIR}/.env не найден!"
+        exit 1
+    fi
+    log "Используем файл окружения: ${TARGET_DIR}/.env"
+}
+
 main() {
     log "🚀 Установка OneDev системы..."
     log "Рабочая директория: $SCRIPT_DIR"
     
     get_user_home
     
-    log "📦 Установка Docker и подготовка пользователя ${NEW_USER}..."
+    log "Установка Docker и подготовка пользователя ${NEW_USER}..."
     sudo NEW_USER="${NEW_USER}" "$SCRIPT_DIR/02-check-install-docker.sh"
     
-    log "📁 Копирование файлов в ${TARGET_DIR}..."
     sudo mkdir -p "${TARGET_DIR}"
     sudo rsync -a --delete "${SCRIPT_DIR}/" "${TARGET_DIR}/"
     sudo chown -R "${NEW_USER}:${NEW_USER}" "${TARGET_DIR}"
@@ -56,16 +64,7 @@ main() {
     log "🚀 Запуск OneDev..."
     sudo -iu "${NEW_USER}" bash -lc "cd '$TARGET_DIR' && ./03-up.sh"
     
-    ok "🎉 Установка завершена!"
-    log ""
-    log "📋 Следующие шаги:"
-    log "   1. Откройте http://localhost в браузере"
-    log "   2. Настройте администратора OneDev"
-    log "   3. Создайте первый проект"
-    log ""
-    log "📚 Документация: https://docs.onedev.io"
-    log "🔧 Управление: sudo -u ${NEW_USER} -i"
-    log "📁 Директория: ${TARGET_DIR}"
+
 }
 
 main "$@"

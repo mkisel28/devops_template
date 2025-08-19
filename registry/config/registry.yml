@@ -24,8 +24,8 @@ http:
   headers:
     X-Content-Type-Options: [nosniff]
     Access-Control-Allow-Origin: ['http://localhost:8080']
-    Access-Control-Allow-Methods: ['HEAD', 'GET', 'OPTIONS', 'DELETE', 'PUT', 'POST']
-    Access-Control-Allow-Headers: ['Authorization', 'Accept', 'Cache-Control', 'Content-Type', 'DNT', 'If-Modified-Since', 'Keep-Alive', 'Origin', 'User-Agent', 'X-Mx-ReqToken', 'X-Requested-With']
+    Access-Control-Allow-Methods: ['HEAD', 'GET', 'OPTIONS', 'DELETE']
+    Access-Control-Allow-Headers: ['Authorization', 'Accept', 'Cache-Control']
     Access-Control-Max-Age: [1728000]
     Access-Control-Allow-Credentials: [true]
     Access-Control-Expose-Headers: ['Docker-Content-Digest']
@@ -36,7 +36,6 @@ health:
     interval: 10s
     threshold: 3
 
-# Notification endpoints for webhooks (optional)
 notifications:
   events:
     includereferences: true
