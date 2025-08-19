@@ -41,8 +41,6 @@ services:
       - registry
     networks:
       - registry-network
-    ports:
-      - 8080:80
 
 
   nginx:

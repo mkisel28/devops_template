@@ -34,13 +34,22 @@ setup_auth() {
 
         source "$ENV_FILE"
         
-        if ! command -v htpasswd &> /dev/null; then
-            warn "htpasswd не найден, устанавливаем apache2-utils..."
-            sudo apt-get update && sudo apt-get install -y apache2-utils
-        fi
-        
         mkdir -p auth
-        htpasswd -Bbn "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" > auth/htpasswd
+
+        if command -v htpasswd &> /dev/null; then
+            htpasswd -Bbn "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" > auth/htpasswd
+        else
+            if command -v docker &> /dev/null; then
+                docker run --rm httpd:2.4-alpine \
+                    htpasswd -Bbn "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" \
+                    > auth/htpasswd
+
+                docker rmi httpd:2.4-alpine
+            else
+                err "Не найден ни htpasswd, ни docker. Установите docker или apache2-utils."
+                exit 1
+            fi
+        fi
         ok "Файл аутентификации создан"
     fi
 }
@@ -55,13 +64,7 @@ start_services() {
     docker compose --env-file "$ENV_FILE" up -d
 
     ok "Сервисы успешно запущены!"
-
-    source "$ENV_FILE"
     
-    echo ""
-    log "Services are available at:"
-    
-    echo "  Nginx Proxy:  http://localhost:$NGINX_HTTP_PORT"
 }
 
 stop_services() {
