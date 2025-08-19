@@ -41,7 +41,7 @@ check_env_file() {
 }
 
 main() {
-    log "🚀 Установка OneDev системы..."
+    log "Установка OneDev системы..."
     log "Рабочая директория: $SCRIPT_DIR"
     
     get_user_home
@@ -53,15 +53,15 @@ main() {
     sudo rsync -a --delete "${SCRIPT_DIR}/" "${TARGET_DIR}/"
     sudo chown -R "${NEW_USER}:${NEW_USER}" "${TARGET_DIR}"
     
-    log "🔧 Создание .env файла из шаблона..."
+    log "Создание .env файла из шаблона..."
     if [ ! -f "${TARGET_DIR}/.env" ]; then
         sudo -u "${NEW_USER}" cp "${TARGET_DIR}/.env.example" "${TARGET_DIR}/.env"
-        log "✅ Создан файл .env из шаблона"
+        log "Создан файл .env из шаблона"
     else
         warn "Файл .env уже существует, пропускаем создание"
     fi
-    
-    log "🚀 Запуск OneDev..."
+
+    log "Запуск OneDev..."
     sudo -iu "${NEW_USER}" bash -lc "cd '$TARGET_DIR' && ./03-up.sh"
     
 
