@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Цвета
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
+
+ENV_FILE=".env"
 
 log() { echo -e "${BLUE}[INFO]${NC} $*"; }
 ok() { echo -e "${GREEN}[OK]${NC} $*"; }
@@ -21,35 +22,13 @@ fi
 
 log "Проверка зависимостей..."
 
-if ! command -v docker >/dev/null 2>&1; then
-    err "Docker не найден в PATH"
-    exit 1
-fi
+command -v docker >/dev/null 2>&1 || { echo "Docker не найден в PATH"; exit 1; }
+docker info >/dev/null 2>&1 || { echo "Пользователь не имеет доступа к Docker (группа docker?)."; exit 1; }
+docker compose version >/dev/null 2>&1 || { echo "Docker Compose plugin не установлен."; exit 1; }
 
-if ! docker info >/dev/null 2>&1; then
-    err "Пользователь не имеет доступа к Docker."
-    err "Убедитесь что пользователь добавлен в группу docker:"
-    err "  sudo usermod -aG docker \$USER"
-    err "  newgrp docker"
-    exit 1
-fi
-
-if ! docker compose version >/dev/null 2>&1; then
-    err "Docker Compose plugin не установлен"
-    exit 1
-fi
 
 ok "Все зависимости проверены"
 
-ENV_FILE=".env"
-
-check_env_file() {
-    if [[ ! -f "$ENV_FILE" ]]; then
-        err "Файл окружения $ENV_FILE не найден!"
-        exit 1
-    fi
-    log "Используем файл окружения: $ENV_FILE"
-}
 
 setup_auth() {
     if [[ ! -f "auth/htpasswd" ]]; then
@@ -77,8 +56,12 @@ setup_auth() {
     fi
 }
 
-check_env_file
-source "$ENV_FILE"
+if [ -f "$ENV_FILE" ]; then
+    source "$ENV_FILE"
+    log "Загружены переменные из $ENV_FILE"
+else
+    warn "Файл $ENV_FILE не найден"
+fi
 
 log "Настройка аутентификации..."
 setup_auth
@@ -97,13 +80,13 @@ echo ""
 ok "Система Docker Registry запущена!"
 echo ""
 log "Информация о доступе:"
-log "   Registry UI:  http://localhost:${NGINX_HTTP_PORT:-80}"
-log "   Registry API: http://localhost:${NGINX_HTTP_PORT:-80}/v2/"
+log "   Registry UI:  http://${REGISTRY_DOMAIN}:${NGINX_HTTP_PORT:-80}"
+log "   Registry API: http://${REGISTRY_DOMAIN}:${NGINX_HTTP_PORT:-80}/v2/"
 log "   Пользователь: ${REGISTRY_USERNAME}"
 echo ""
 log "Следующие шаги:"
 log "   1. Войдите используя учетные данные: ${REGISTRY_USERNAME}"
-log "   2. Протестируйте загрузку образа: docker login localhost:${NGINX_HTTP_PORT:-80}"
+log "   2. Протестируйте загрузку образа: docker login ${REGISTRY_DOMAIN}:${NGINX_HTTP_PORT:-80}"
 log "   3. Загрузите тестовый образ командой: ./manage.sh test"
 echo ""
-log "Управление: используйте ./manage.sh [start|stop|restart|test]"
+log "Управление: используйте ./manage.sh [test]"

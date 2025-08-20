@@ -44,6 +44,7 @@ main() {
     log "Рабочая директория: $SCRIPT_DIR"
     
     get_user_home
+    check_env_file
     
     log "Установка Docker и подготовка пользователя ${NEW_USER}..."
     sudo NEW_USER="${NEW_USER}" "$SCRIPT_DIR/02-check-install-docker.sh"

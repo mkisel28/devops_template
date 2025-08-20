@@ -6,7 +6,6 @@ if [ "$(id -u)" -eq 0 ]; then
   exit 1
 fi
 
-# Проверки
 command -v docker >/dev/null 2>&1 || { echo "Docker не найден в PATH"; exit 1; }
 docker info >/dev/null 2>&1 || { echo "Пользователь не имеет доступа к Docker (группа docker?)."; exit 1; }
 docker compose version >/dev/null 2>&1 || { echo "Docker Compose plugin не установлен."; exit 1; }

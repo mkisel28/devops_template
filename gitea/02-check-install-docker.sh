@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Проверка root
 if [ "$(id -u)" -ne 0 ]; then
   echo "Этот скрипт нужно запускать от root (sudo)."
   exit 1
@@ -27,13 +26,11 @@ apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker
 
 systemctl enable --now docker
 
-# Создание пользователя (если нужно)
 NEW_USER="${NEW_USER:-ci}"
 if ! id "${NEW_USER}" >/dev/null 2>&1; then
   adduser --disabled-password --gecos "" "${NEW_USER}"
 fi
 
-# Доступ к Docker без root
 groupadd -f docker
 usermod -aG docker "${NEW_USER}"
 
