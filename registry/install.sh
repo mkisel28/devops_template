@@ -17,10 +17,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TARGET_HOME=""
 TARGET_DIR=""
 
-if [ "$(id -u)" -eq 0 ]; then
-    err "Не запускайте install.sh от root. Используйте обычного пользователя с sudo."
-    exit 1
-fi
 
 get_user_home() {
     if id "${NEW_USER}" >/dev/null 2>&1; then
@@ -31,20 +27,13 @@ get_user_home() {
     TARGET_DIR="${TARGET_HOME}/registry"
 }
 
-check_env_file() {
-    if [[ ! -f "${TARGET_DIR}/.env" ]]; then
-        err "Файл ${TARGET_DIR}/.env не найден!"
-        exit 1
-    fi
-    log "Используем файл окружения: ${TARGET_DIR}/.env"
-}
 
 main() {
     log "Установка Docker Registry системы..."
     log "Рабочая директория: $SCRIPT_DIR"
     
     get_user_home
-    check_env_file
+    
     
     log "Установка Docker и подготовка пользователя ${NEW_USER}..."
     sudo NEW_USER="${NEW_USER}" "$SCRIPT_DIR/02-check-install-docker.sh"

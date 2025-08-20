@@ -17,10 +17,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TARGET_HOME=""
 TARGET_DIR=""
 
-if [ "$(id -u)" -eq 0 ]; then
-    err "Не запускайте install.sh от root. Используйте обычного пользователя с sudo."
-    exit 1
-fi
 
 get_user_home() {
     if id "${NEW_USER}" >/dev/null 2>&1; then

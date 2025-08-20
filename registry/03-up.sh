@@ -14,11 +14,6 @@ ok() { echo -e "${GREEN}[OK]${NC} $*"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $*"; }
 err() { echo -e "${RED}[ERR]${NC} $*"; }
 
-if [ "$(id -u)" -eq 0 ]; then
-    err "Не запускайте этот скрипт от root."
-    err "Переключитесь на пользователя, добавленного в группу docker."
-    exit 1
-fi
 
 log "Проверка зависимостей..."
 

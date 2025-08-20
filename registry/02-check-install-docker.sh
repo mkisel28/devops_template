@@ -1,10 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [ "$(id -u)" -ne 0 ]; then
-    echo "Этот скрипт должен запускаться от root (sudo)."
-    exit 1
-fi
+
 
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -21,10 +18,8 @@ log "Обновление пакетов..."
 apt update -y
 
 install_docker() {
-    log "Установка зависимостей..."
     apt install -y ca-certificates curl gnupg lsb-release rsync apache2-utils
 
-    log "Добавление репозитория Docker..."
     install -m 0755 -d /etc/apt/keyrings
     if [ ! -f /etc/apt/keyrings/docker.gpg ]; then
         curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
@@ -36,11 +31,9 @@ install_docker() {
     https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
     > /etc/apt/sources.list.d/docker.list
 
-    log "Установка Docker..."
     apt update -y
     apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-    log "Запуск Docker..."
     systemctl enable --now docker
 }
 

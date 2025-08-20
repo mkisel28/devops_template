@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [ "$(id -u)" -ne 0 ]; then
-    echo "Этот скрипт должен запускаться от root (sudo)."
-    exit 1
-fi
 
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'

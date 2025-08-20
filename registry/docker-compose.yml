@@ -1,6 +1,6 @@
 services:
   registry:
-    image: registry:2.8.2
+    image: registry:3
     container_name: docker-registry
     restart: unless-stopped
     environment:
@@ -11,7 +11,7 @@ services:
     volumes:
       - registry_data:/var/lib/registry
       - ./auth:/auth:ro
-      - ./config/registry.yml:/etc/docker/registry/config.yml:ro
+      - ./config/registry.yml:/etc/distribution/config.yml:ro
     networks:
       - registry-network
 
