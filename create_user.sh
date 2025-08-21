@@ -11,28 +11,17 @@ set -e
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
+YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
 declare -A SUDO_PASSWORDS
 
-log() {
-    echo -e "${BLUE}[$(date '+%Y-%m-%d %H:%M:%S')] ${1}${NC}"
-}
+log() { echo -e "${BLUE}[INFO]${NC} $*"; }
+success() { echo -e "${GREEN}[OK]${NC} $*"; }
+warn() { echo -e "${YELLOW}[WARN]${NC} $*"; }
+error() { echo -e "${RED}[ERR]${NC} $*"; }
 
-success() {
-    echo -e "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')] ${1}${NC}"
-}
-
-warn() {
-    echo -e "${YELLOW}[$(date '+%Y-%m-%d %H:%M:%S')] WARNING: ${1}${NC}"
-}
-
-error() {
-    echo -e "${RED}[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: ${1}${NC}"
-    exit 1
-}
 
 check_root() {
     if [ "$(id -u)" -ne 0 ]; then
