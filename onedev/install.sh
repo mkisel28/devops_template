@@ -59,8 +59,6 @@ main() {
 
     log "Запуск OneDev..."
     sudo -iu "${NEW_USER}" bash -lc "cd '$TARGET_DIR' && ./03-up.sh"
-    
-
 }
 
 main "$@"

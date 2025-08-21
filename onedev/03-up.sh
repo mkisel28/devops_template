@@ -14,8 +14,6 @@ ok() { echo -e "${GREEN}[OK]${NC} $*"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $*"; }
 err() { echo -e "${RED}[ERR]${NC} $*"; }
 
-
-
 log "Проверка зависимостей..."
 
 command -v docker >/dev/null 2>&1 || { echo "Docker не найден в PATH"; exit 1; }
@@ -37,7 +35,6 @@ docker compose pull
 
 log "Запуск системы OneDev..."
 docker compose up -d
-
 
 log "Проверка статуса сервисов..."
 docker compose ps

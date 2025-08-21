@@ -34,7 +34,6 @@ main() {
     
     get_user_home
     
-    
     log "Установка Docker и подготовка пользователя ${NEW_USER}..."
     sudo NEW_USER="${NEW_USER}" "$SCRIPT_DIR/02-check-install-docker.sh"
     

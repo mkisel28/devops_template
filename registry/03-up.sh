@@ -33,10 +33,10 @@ setup_auth() {
         
         mkdir -p auth
 
-        if command -v htpasswd &> /dev/null; then
+        if command -v htpasswd >/dev/null 2>&1; then
             htpasswd -Bbn "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" > auth/htpasswd
         else
-            if command -v docker &> /dev/null; then
+            if command -v docker >/dev/null 2>&1; then
                 docker run --rm httpd:2.4-alpine \
                     htpasswd -Bbn "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" \
                     > auth/htpasswd

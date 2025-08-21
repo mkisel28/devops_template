@@ -26,6 +26,7 @@ error() { echo -e "${RED}[ERR]${NC} $*"; }
 check_root() {
     if [ "$(id -u)" -ne 0 ]; then
         error "Этот скрипт должен быть запущен от имени root или с sudo"
+        exit 1
     fi
 }
 
@@ -34,6 +35,7 @@ create_users() {
     
     if [ $# -lt 3 ] || [ $(($# % 3)) -ne 0 ]; then
         error "Неверное количество параметров. Использование: $0 user1 \"ssh-key1\" is_sudo1 [user2 \"ssh-key2\" is_sudo2] ..."
+        exit 1
     fi
     
     while [ $# -ge 3 ]; do
@@ -52,7 +54,7 @@ create_users() {
         fi
         
         if [ "$is_sudo" = "true" ]; then
-            SUDO_PASSWORD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 16 | head -n 1)
+            SUDO_PASSWORD=$(openssl rand -base64 12)
             echo "$username:$SUDO_PASSWORD" | chpasswd
             usermod -aG sudo "$username"
             SUDO_PASSWORDS["$username"]="$SUDO_PASSWORD"
@@ -60,11 +62,11 @@ create_users() {
         fi
         
         if [ -n "$ssh_key" ]; then
-            mkdir -p /home/$username/.ssh
-            echo "$ssh_key" >> /home/$username/.ssh/authorized_keys
-            chmod 700 /home/$username/.ssh
-            chmod 600 /home/$username/.ssh/authorized_keys
-            chown -R $username:$username /home/$username/.ssh
+            mkdir -p "/home/$username/.ssh"
+            echo "$ssh_key" >> "/home/$username/.ssh/authorized_keys"
+            chmod 700 "/home/$username/.ssh"
+            chmod 600 "/home/$username/.ssh/authorized_keys"
+            chown -R "$username":"$username" "/home/$username/.ssh"
             success "Добавлен SSH публичный ключ для $username"
         else
             warn "Пустой SSH ключ для $username. Пожалуйста, добавьте SSH ключи вручную."
