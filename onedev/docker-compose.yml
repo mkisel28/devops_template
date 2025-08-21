@@ -112,3 +112,30 @@ services:
       - agent
     env_file:
       - .env
+
+  backup:
+    image: mkisel28/backup-mng:latest
+    container_name: onedev-backup
+    restart: unless-stopped
+    depends_on:
+      onedev-db:
+        condition: service_healthy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./backup/config:/app/config:ro
+      - ./backup/logs:/logs
+      - ./backup/archives:/backup/archives
+      - ./backup/ssh:/app/ssh:ro
+      - onedev-data:/backup-volumes/onedev-data:ro
+      - onedev-db-data:/backup-volumes/onedev-db-data:ro
+    networks:
+      - onedev-net
+    environment:
+      - TZ=Europe/Moscow
+    command: schedule
+    healthcheck:
+      test: ["CMD", "test", "-f", "/app/logs/backup.log"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s

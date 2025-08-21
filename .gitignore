@@ -1,3 +1,19 @@
 /.vscode
 *.env
 *htpasswd
+
+# Исключаем конфиденциальные данные системы бекапов
+*/backup/config/backup.env
+*/backup/ssh/id_rsa
+*/backup/ssh/id_rsa.pub
+
+# Исключаем файлы бекапов и логи
+*/backup/archives/
+*/backup/logs/
+*/backup/temp/
+
+# Временные файлы
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
