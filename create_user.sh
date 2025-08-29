@@ -1,10 +1,17 @@
 #!/bin/bash
 #
 # Usage:
-#   sudo bash create_user.sh user1 "ssh-rsa AAAA..." is_sudo1 [user2 "ssh-rsa BBB..." is_sudo2] ...
+#   Создание обычных пользователей:
+#     sudo bash create_user.sh --user user1 "ssh-rsa AAAA..." is_sudo1 [--no-docker] [--user user2 "ssh-rsa BBB..." is_sudo2] ... [--configure-ssh]
 #   
-# Example:
-#   sudo bash create_user.sh andrey "ssh-rsa AAAAB3Nza... user@host" true maks "ssh-rsa BBB..." false
+#   Создание сервисных пользователей:
+#     sudo bash create_user.sh --service service1 [--no-docker] [service2] ... [--configure-ssh]
+#   
+# Examples:
+#   sudo bash create_user.sh --user andrey "ssh-rsa AAAAB3Nza... user@host" true --user maks "ssh-rsa BBB..." false --configure-ssh
+#   sudo bash create_user.sh --service onedev signoz jenkins
+#   sudo bash create_user.sh --user admin "ssh-rsa AAA..." true --service onedev --no-docker --user dev "ssh-rsa BBB..." false --configure-ssh
+#   sudo bash create_user.sh --user restricted "ssh-rsa CCC..." false --no-docker
 #
 
 set -e  
@@ -30,11 +37,54 @@ check_root() {
     fi
 }
 
+add_user_to_docker_group() {
+    local username=$1
+    
+    # Создаем группу docker если её нет
+    if ! getent group docker >/dev/null 2>&1; then
+        groupadd docker
+        log "Создана группа docker"
+    fi
+    
+    # Добавляем пользователя в группу docker
+    usermod -aG docker "${username}"
+    success "Пользователь ${username} добавлен в группу docker"
+}
+
+create_service_user() {
+    local username=$1
+    local add_to_docker=${2:-true}
+    
+    log "Настройка сервисного пользователя ${username}..."
+    
+    if ! id "${username}" >/dev/null 2>&1; then
+        adduser --disabled-password --gecos "" "${username}"
+        success "Создан сервисный пользователь ${username}"
+        
+        passwd -l "${username}" >/dev/null 2>&1
+        log "Пароль для ${username} заблокирован"
+    else
+        log "Пользователь ${username} уже существует"
+        
+        if ! passwd -S "${username}" | grep -q "L"; then
+            passwd -l "${username}" >/dev/null 2>&1
+            log "Пароль для существующего пользователя ${username} заблокирован"
+        fi
+    fi
+    
+    # Добавляем в группу docker, если не указан флаг --no-docker
+    if [ "$add_to_docker" = "true" ]; then
+        add_user_to_docker_group "${username}"
+    else
+        log "Пользователь ${username} не добавлен в группу docker (указан флаг --no-docker)"
+    fi
+}
+
 create_users() {
     log "Создание пользователей с SSH ключами..."
     
     if [ $# -lt 3 ] || [ $(($# % 3)) -ne 0 ]; then
-        error "Неверное количество параметров. Использование: $0 user1 \"ssh-key1\" is_sudo1 [user2 \"ssh-key2\" is_sudo2] ..."
+        error "Неверное количество параметров. Использование: --user username \"ssh-key\" is_sudo"
         exit 1
     fi
     
@@ -117,12 +167,82 @@ EOF
 
 main() {
     check_root
-    create_users "$@"
-    configure_ssh
+    
+    if [ $# -eq 0 ]; then
+        error "Не указаны параметры"
+        echo "Использование:"
+        echo "  Обычные пользователи: $0 --user username \"ssh-key\" is_sudo [--user ...] [--configure-ssh]"
+        echo "  Сервисные пользователи: $0 --service service1 [service2 ...] [--configure-ssh]"
+        echo "  Смешанный режим: $0 --user admin \"ssh-key\" true --service onedev [--configure-ssh]"
+        echo ""
+        echo "Флаги:"
+        echo "  --configure-ssh    Настроить SSH для аутентификации по ключам (отключить пароли)"
+        exit 1
+    fi
+    
+    local user_args=()
+    local service_users=()
+    local configure_ssh_flag=false
+    local mode=""
+    
+    while [ $# -gt 0 ]; do
+        case $1 in
+            --user)
+                mode="user"
+                shift
+                if [ $# -lt 3 ]; then
+                    error "Недостаточно параметров для --user. Нужно: username ssh-key is_sudo"
+                    exit 1
+                fi
+                user_args+=("$1" "$2" "$3")
+                shift 3
+                ;;
+            --service)
+                mode="service"
+                shift
+                while [ $# -gt 0 ] && [[ ! "$1" =~ ^-- ]]; do
+                    service_users+=("$1")
+                    shift
+                done
+                ;;
+            --configure-ssh)
+                configure_ssh_flag=true
+                shift
+                ;;
+            *)
+                error "Неизвестный параметр: $1"
+                exit 1
+                ;;
+        esac
+    done
+    
+    if [ ${#service_users[@]} -gt 0 ]; then
+        log "Создание сервисных пользователей..."
+        for service_user in "${service_users[@]}"; do
+            create_service_user "$service_user"
+        done
+    fi
+    
+    if [ ${#user_args[@]} -gt 0 ]; then
+        create_users "${user_args[@]}"
+    fi
+    
+    if [ "$configure_ssh_flag" = true ]; then
+        configure_ssh
+    else
+        log "SSH конфигурация пропущена (используйте --configure-ssh для настройки)"
+    fi
     
     success "==================================================="
-    success "Создание пользователей и настройка SSH завершены!"
+    success "Создание пользователей завершено!"
     success "==================================================="
+    
+    if [ ${#service_users[@]} -gt 0 ]; then
+        log "Созданные сервисные пользователи:"
+        for service_user in "${service_users[@]}"; do
+            success "  - $service_user (системный пользователь)"
+        done
+    fi
     
     if [ ${#SUDO_PASSWORDS[@]} -gt 0 ]; then
         log "Пользователи sudo и их пароли:"
@@ -130,7 +250,10 @@ main() {
             warn "$username: ${SUDO_PASSWORDS[$username]}"
         done
     fi
-    warn "ВАЖНО: Убедитесь, что вы можете получить доступ к серверу с помощью SSH ключа, прежде чем закрыть эту сессию"
+    
+    if [ "$configure_ssh_flag" = true ]; then
+        warn "ВАЖНО: Убедитесь, что вы можете получить доступ к серверу с помощью SSH ключа, прежде чем закрыть эту сессию"
+    fi
 
 }
 
