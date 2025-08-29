@@ -1,6 +1,10 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/bash
+#
+# Скрипт для установки Docker на Ubuntu/Debian
+# Usage: sudo bash install-docker.sh
+#
 
+set -e
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -8,13 +12,10 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-
 log() { echo -e "${BLUE}[INFO]${NC} $*"; }
-ok() { echo -e "${GREEN}[OK]${NC} $*"; }
+success() { echo -e "${GREEN}[OK]${NC} $*"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $*"; }
 error() { echo -e "${RED}[ERR]${NC} $*"; }
-
-NEW_USER="${NEW_USER:-registry}"
 
 request_sudo() {
     if [ "$(id -u)" -ne 0 ]; then
@@ -65,10 +66,10 @@ check_docker_installed() {
 
 install_dependencies() {
     log "Обновление пакетов..."
-    apt update -y
+    apt-get update -y
     
     log "Установка зависимостей..."
-    apt install -y ca-certificates curl gnupg lsb-release rsync apache2-utils
+    apt-get install -y ca-certificates curl gnupg lsb-release rsync apache2-utils
 }
 
 setup_docker_repository() {
@@ -90,12 +91,12 @@ setup_docker_repository() {
         ${VERSION_CODENAME} stable" | \
         tee /etc/apt/sources.list.d/docker.list > /dev/null
     
-    apt update -y
+    apt-get update -y
 }
 
 install_docker_packages() {
     log "Установка пакетов Docker..."
-    apt install -y \
+    apt-get install -y \
         docker-ce \
         docker-ce-cli \
         containerd.io \
@@ -137,10 +138,13 @@ verify_installation() {
     fi
 }
 
-install_docker() {    
+install_docker() {
+
+    
     request_sudo
     detect_distro
 
+    
     install_dependencies
     setup_docker_repository
     install_docker_packages
@@ -150,30 +154,17 @@ install_docker() {
         success "=========================================="
         success "Docker успешно установлен!"
         success "=========================================="
+
         
     else
-        error "=========================================="
         error "Установка Docker завершилась с ошибками"
-        error "=========================================="
+        exit 1
     fi
 }
 
 if check_docker_installed; then
     warn "Docker уже установлен. Пропускаем установку."
+    exit 0
 else
     install_docker "$@"
 fi
-
-
-log "Настройка пользователя ${NEW_USER}..."
-if ! id "${NEW_USER}" >/dev/null 2>&1; then
-    adduser --disabled-password --gecos "" "${NEW_USER}"
-    ok "Создан пользователь ${NEW_USER}"
-else
-    log "Пользователь ${NEW_USER} уже существует"
-fi
-
-groupadd -f docker
-usermod -aG docker "${NEW_USER}"
-
-ok "Пользователь ${NEW_USER} настроен"
