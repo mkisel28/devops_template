@@ -43,19 +43,13 @@ main() {
     get_user_home
     
     log "Установка Docker и подготовка пользователя ${NEW_USER}..."
-    sudo NEW_USER="${NEW_USER}" "$SCRIPT_DIR/02-check-install-docker.sh"
+    sudo "$SCRIPT_DIR/01-check-install-docker.sh"
+    sudo NEW_USER="${NEW_USER}" "$SCRIPT_DIR/02-create-user.sh"
     
     sudo mkdir -p "${TARGET_DIR}"
     sudo rsync -a --delete "${SCRIPT_DIR}/" "${TARGET_DIR}/"
     sudo chown -R "${NEW_USER}:${NEW_USER}" "${TARGET_DIR}"
     
-    log "Создание .env файла из шаблона..."
-    if [ ! -f "${TARGET_DIR}/.env" ]; then
-        sudo -u "${NEW_USER}" cp "${TARGET_DIR}/.env.example" "${TARGET_DIR}/.env"
-        log "Создан файл .env из шаблона"
-    else
-        warn "Файл .env уже существует, пропускаем создание"
-    fi
 
     log "Запуск OneDev..."
     sudo -iu "${NEW_USER}" bash -lc "cd '$TARGET_DIR' && ./03-up.sh"

@@ -34,7 +34,11 @@ log "Получение образов Docker..."
 docker compose pull
 
 log "Запуск системы OneDev..."
-docker compose up -d
+if [ "$ENABLE_BACKUP" = "true" ]; then
+    docker compose --profile backup up -d
+else
+    docker compose up -d
+fi
 
 log "Проверка статуса сервисов..."
 docker compose ps
@@ -43,14 +47,4 @@ docker compose ps
 echo ""
 ok "Система OneDev запущена!"
 echo ""
-log "📋 Информация о доступе:"
-log "   🌐 Web UI:     http://localhost:${NGINX_HTTP_PORT:-80}"
-log "   🐳 OneDev:     http://localhost:${ONEDEV_HTTP_PORT:-6610}"
-log "   🔐 SSH:        ssh://localhost:${ONEDEV_SSH_PORT:-6611}"
-echo ""
-log "📚 Следующие шаги:"
-log "   1. Войдите используя учетные данные администратора"
-log "   2. Настройте систему согласно документации"
-log "   3. Создайте первый проект"
-echo ""
-log "📖 Документация: https://docs.onedev.io"
+log "Документация: https://docs.onedev.io"

@@ -14,8 +14,6 @@ ok() { echo -e "${GREEN}[OK]${NC} $*"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $*"; }
 error() { echo -e "${RED}[ERR]${NC} $*"; }
 
-NEW_USER="${NEW_USER:-onedev}"
-
 
 request_sudo() {
     if [ "$(id -u)" -ne 0 ]; then
@@ -166,15 +164,3 @@ else
 fi
 
 
-log "Настройка пользователя ${NEW_USER}..."
-if ! id "${NEW_USER}" >/dev/null 2>&1; then
-    adduser --disabled-password --gecos "" "${NEW_USER}"
-    ok "Создан пользователь ${NEW_USER}"
-else
-    log "Пользователь ${NEW_USER} уже существует"
-fi
-
-groupadd -f docker
-usermod -aG docker "${NEW_USER}"
-
-ok "Пользователь ${NEW_USER} настроен"

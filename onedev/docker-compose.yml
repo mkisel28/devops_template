@@ -76,7 +76,6 @@ services:
         condition: service_healthy
     ports:
       - "${NGINX_HTTP_PORT}:80"
-      - "${ONEDEV_SSH_PORT:-2222}:2222"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
@@ -139,3 +138,4 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+    profiles: ["backup"]

@@ -11,9 +11,8 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+NC='\033[0m' 
 
-# Функции логирования
 log_info() {
     echo -e "${GREEN}[INFO]${NC} $1"
 }
@@ -30,17 +29,14 @@ log_step() {
     echo -e "${BLUE}[STEP]${NC} $1"
 }
 
-# Проверка окружения
 check_requirements() {
     log_step "Проверка требований..."
     
-    # Проверка Docker
     if ! command -v docker &> /dev/null; then
         log_error "Docker не установлен"
         exit 1
     fi
     
-    # Проверка docker compose
     if ! docker compose version &> /dev/null; then
         log_error "Docker Compose не установлен"
         exit 1
@@ -49,7 +45,6 @@ check_requirements() {
     log_info "Все требования выполнены"
 }
 
-# Сборка образа системы бекапов
 build_backup_system() {
     log_step "Сборка образа системы бекапов..."
     
@@ -69,33 +64,26 @@ build_backup_system() {
     cd ..
 }
 
-# Настройка директорий для onedev
 setup_onedev_directories() {
     log_step "Создание структуры директорий для onedev..."
     
-    # Создание директорий
     mkdir -p onedev/backup/{config,logs,archives,ssh}
     
-    # Установка правильных прав
     chmod 700 onedev/backup/ssh
     
     log_info "Структура директорий создана"
 }
 
-# Копирование конфигурационных файлов
 setup_configuration() {
     log_step "Настройка конфигурации..."
     
-    # Проверка существования файла конфигурации
     if [ ! -f "onedev/backup/config/backup.env" ]; then
         if [ -f "backup-system/config/backup.env.example" ]; then
             cp backup-system/config/backup.env.example onedev/backup/config/backup.env
             log_info "Конфигурационный файл скопирован"
             
-            # Обновление настроек для onedev
             log_step "Настройка параметров для onedev..."
             
-            # Обновление конфигурации
             sed -i 's/PROJECT_NAME=onedev/PROJECT_NAME=onedev/' onedev/backup/config/backup.env
             sed -i 's/DB_PASSWORD=onedev_secure_password_change_me/DB_PASSWORD=onedev_secure_password_change_me/' onedev/backup/config/backup.env
             
@@ -115,7 +103,6 @@ setup_configuration() {
     fi
 }
 
-# Генерация SSH ключей
 generate_ssh_keys() {
     log_step "Генерация SSH ключей..."
     
@@ -139,11 +126,9 @@ generate_ssh_keys() {
     fi
 }
 
-# Тестирование системы
 test_system() {
     log_step "Тестирование системы бекапов..."
     
-    # Запуск контейнера для тестирования
     log_info "Запуск тестового контейнера..."
     
     if docker run --rm \
@@ -158,44 +143,42 @@ test_system() {
     fi
 }
 
-# Показать инструкции по завершению настройки
 show_final_instructions() {
     echo
-    echo "🎉 УСТАНОВКА ЗАВЕРШЕНА!"
+    echo "УСТАНОВКА ЗАВЕРШЕНА!"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo
     log_info "Что дальше:"
     echo
-    echo "1. 📝 НАСТРОЙТЕ КОНФИГУРАЦИЮ:"
+    echo "1НАСТРОЙТЕ КОНФИГУРАЦИЮ:"
     echo "   nano onedev/backup/config/backup.env"
     echo
-    echo "2. 🔑 НАСТРОЙТЕ SSH ДОСТУП К СЕРВЕРУ БЕКАПОВ:"
+    echo "2 НАСТРОЙТЕ SSH ДОСТУП К СЕРВЕРУ БЕКАПОВ:"
     echo "   ssh-copy-id -i onedev/backup/ssh/id_rsa.pub backup@your-backup-server.com"
     echo
-    echo "3. 📱 НАСТРОЙТЕ TELEGRAM БОТА:"
+    echo "3.  НАСТРОЙТЕ TELEGRAM БОТА:"
     echo "   - Создайте бота через @BotFather"
     echo "   - Получите токен и chat_id"
     echo "   - Укажите их в конфигурации"
     echo
-    echo "4. 🚀 ЗАПУСТИТЕ СИСТЕМУ БЕКАПОВ:"
+    echo "4. ЗАПУСТИТЕ СИСТЕМУ БЕКАПОВ:"
     echo "   cd onedev"
     echo "   docker compose --profile backup up -d"
     echo
-    echo "5. 🧪 ПРОТЕСТИРУЙТЕ БЕКАП:"
+    echo "5.  ПРОТЕСТИРУЙТЕ БЕКАП:"
     echo "   docker exec onedev-backup /app/scripts/entrypoint.sh backup --dry-run"
     echo
-    echo "6. 🔌 ПРОВЕРЬТЕ СОЕДИНЕНИЯ:"
+    echo "6.     ПРОВЕРЬТЕ СОЕДИНЕНИЯ:"
     echo "   docker exec onedev-backup /app/scripts/entrypoint.sh test-connection"
     echo
     log_info "Система готова к использованию!"
     echo
-    echo "📖 Подробная документация: backup-system/README.md"
-    echo "❓ Справка: docker exec onedev-backup /app/scripts/entrypoint.sh help"
+    echo " Подробная документация: backup-system/README.md"
+    echo " Справка: docker exec onedev-backup /app/scripts/entrypoint.sh help"
 }
 
-# Основная функция
 main() {
-    echo "🛠️  УСТАНОВКА СИСТЕМЫ БЕКАПОВ ДЛЯ ONEDEV"
+    echo "УСТАНОВКА СИСТЕМЫ БЕКАПОВ ДЛЯ ONEDEV"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo
     
@@ -217,7 +200,6 @@ main() {
     show_final_instructions
 }
 
-# Проверка аргументов
 if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
     echo "Использование: $0 [--help]"
     echo
@@ -232,5 +214,4 @@ if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
     exit 0
 fi
 
-# Запуск основной функции
 main
